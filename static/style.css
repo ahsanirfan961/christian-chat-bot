@@ -35,7 +35,7 @@ body {
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
     background: var(--bg-primary);
     color: var(--text-primary);
-    min-height: 100vh;
+    height: 100vh;
     display: flex;
     flex-direction: column;
     overflow: hidden;
@@ -110,6 +110,7 @@ main {
     display: flex;
     flex-direction: column;
     overflow: hidden;
+    min-height: 0;
 }
 
 .chat-container {
@@ -117,6 +118,7 @@ main {
     overflow-y: auto;
     padding-bottom: 10px;
     scroll-behavior: smooth;
+    min-height: 0;
 }
 
 .chat-container::-webkit-scrollbar {
@@ -469,6 +471,7 @@ h5.response-heading {
 .main-wrapper {
     position: relative;
     overflow: hidden;
+    min-height: 0;
 }
 
 .sidebar {
