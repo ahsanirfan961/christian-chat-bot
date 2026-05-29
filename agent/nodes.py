@@ -298,17 +298,13 @@ async def image_gen_node(state: AgentState) -> dict:
     # Step 1: Sanitise the prompt via Gemini 2.5 Flash
     llm = _get_llm(temperature=0.5)
 
-    # Get the user's original request
-    user_msg = ""
-    for msg in reversed(state["messages"]):
-        if isinstance(msg, HumanMessage):
-            user_msg = msg.content
-            break
-
-    safety_messages = [
-        SystemMessage(content=IMAGE_SAFETY_PROMPT),
-        HumanMessage(content=f"User's image request: {user_msg}"),
-    ]
+    safety_messages = [SystemMessage(content=IMAGE_SAFETY_PROMPT)]
+    for msg in state["messages"]:
+        if isinstance(msg, (HumanMessage, AIMessage)):
+            safety_messages.append(msg)
+            
+    # Append explicit instruction to ensure the safety filter outputs the image prompt
+    safety_messages.append(SystemMessage(content="Based on the conversation above, extract the user's latest image request and produce a SAFE, policy-compliant image prompt."))
 
     try:
         safe_prompt_resp = await llm.ainvoke(safety_messages)
@@ -479,17 +475,13 @@ async def output_assembler_node(state: AgentState) -> dict:
         is_controversial=str(is_controversial),
     )
 
-    # Get the original user question
-    user_msg = ""
-    for msg in state["messages"]:
-        if isinstance(msg, HumanMessage):
-            user_msg = msg.content
-
     llm = _get_llm(temperature=0.4)
-    messages = [
-        SystemMessage(content=system_content),
-        HumanMessage(content=user_msg),
-    ]
+    messages = [SystemMessage(content=system_content)]
+    
+    # Pass the full conversational history (excluding internal system messages)
+    for msg in state["messages"]:
+        if isinstance(msg, (HumanMessage, AIMessage)):
+            messages.append(msg)
 
     try:
         response = await llm.ainvoke(messages)
