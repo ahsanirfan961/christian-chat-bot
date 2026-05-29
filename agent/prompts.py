@@ -106,10 +106,9 @@ Given the user's image request, produce a SAFE, policy-compliant image prompt.
 # Static Messages
 # ──────────────────────────────────────────────────────────────────────
 ADVERSARIAL_REJECTION_MESSAGE = (
-    "I appreciate your curiosity, but I'm unable to modify, rewrite, or "
-    "reinterpret scripture to support a particular ideology or viewpoint "
-    "that contradicts its original message. The Bible's text is sacred and "
-    "should be presented faithfully.\n\n"
+    "I am unable to fulfill this request. As a Christianity-focused AI assistant, "
+    "I cannot modify, rewrite, or distort scripture to support a particular ideology, "
+    "nor can I generate responses that promote hatred, violence, or harm towards others.\n\n"
     "If you have a genuine theological question, I'd be happy to help you "
     "explore what the scriptures actually say on the topic. 🙏"
 )
