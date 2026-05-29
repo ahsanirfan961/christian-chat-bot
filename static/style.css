@@ -465,6 +465,86 @@ h5.response-heading {
     40%           { transform: scale(1);   opacity: 1;   }
 }
 
+/* ─── Sidebar ─── */
+.main-wrapper {
+    position: relative;
+    overflow: hidden;
+}
+
+.sidebar {
+    width: 260px;
+    background: var(--bg-secondary);
+    border-right: 1px solid var(--border-subtle);
+    display: flex;
+    flex-direction: column;
+    transition: transform var(--transition);
+    z-index: 90;
+    flex-shrink: 0;
+}
+
+.sidebar-header {
+    padding: 1.25rem 1rem;
+    border-bottom: 1px solid var(--border-subtle);
+}
+
+.sidebar-header h5 {
+    margin: 0;
+    color: var(--gold);
+    font-size: 1rem;
+    font-weight: 600;
+}
+
+.sidebar-content {
+    flex: 1;
+    overflow-y: auto;
+    padding: 0.75rem;
+}
+
+.sidebar-content::-webkit-scrollbar {
+    width: 4px;
+}
+.sidebar-content::-webkit-scrollbar-thumb {
+    background: var(--navy-light);
+    border-radius: 2px;
+}
+
+.session-item {
+    padding: 0.75rem 1rem;
+    border-radius: var(--radius-sm);
+    color: var(--text-primary);
+    text-decoration: none;
+    display: block;
+    margin-bottom: 0.4rem;
+    font-size: 0.85rem;
+    transition: var(--transition);
+    border: 1px solid transparent;
+    cursor: pointer;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.session-item:hover {
+    background: var(--navy-light);
+    color: var(--text-primary);
+}
+
+.session-item.active {
+    background: var(--bg-card);
+    border-color: var(--gold-dim);
+    box-shadow: 0 0 10px var(--gold-glow);
+    color: var(--gold);
+    font-weight: 500;
+}
+
+.main-chat {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    background: var(--bg-primary);
+}
+
 /* ─── Responsive ─── */
 @media (max-width: 768px) {
     .welcome-title { font-size: 1.5rem; }
@@ -473,6 +553,18 @@ h5.response-heading {
     .messages-area { padding: 1rem 0.75rem; }
     .message-text { font-size: 0.88rem; }
     .input-container { padding: 0.75rem 0.5rem 0.5rem; }
+    
+    .sidebar {
+        position: absolute;
+        top: 0;
+        bottom: 0;
+        left: 0;
+        transform: translateX(-100%);
+        box-shadow: var(--shadow-soft);
+    }
+    .sidebar.show {
+        transform: translateX(0);
+    }
 }
 
 @media (max-width: 480px) {

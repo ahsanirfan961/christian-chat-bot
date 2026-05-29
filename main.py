@@ -178,6 +178,93 @@ async def reset_session(request: Request, response: Response):
     return resp
 
 
+@app.get("/sessions")
+async def list_sessions():
+    """List all past chat sessions (threads)."""
+    graph = _app_state.get("graph")
+    saver = _app_state.get("saver")
+    if not graph or not saver:
+        return JSONResponse({"error": "Server not ready"}, status_code=503)
+        
+    db_path = str(BASE_DIR / "checkpoints.db")
+    import aiosqlite
+    
+    try:
+        # Get distinct thread_ids
+        async with aiosqlite.connect(db_path) as db:
+            async with db.execute("SELECT DISTINCT thread_id FROM checkpoints") as cursor:
+                threads = [row[0] for row in await cursor.fetchall()]
+                
+        sessions = []
+        for t_id in threads:
+            # Skip eval sessions
+            if t_id.startswith("eval-"):
+                continue
+                
+            state = await graph.aget_state({"configurable": {"thread_id": t_id}})
+            if state and state.values:
+                messages = state.values.get("messages", [])
+                if messages and hasattr(messages[0], "content"):
+                    title = messages[0].content[:40] + ("..." if len(messages[0].content) > 40 else "")
+                    sessions.append({"id": t_id, "title": title})
+                    
+        # Return in reverse chronological order (newest roughly last or just as queried, but we can't sort easily without created_at, so reverse the list as a proxy)
+        return JSONResponse({"sessions": sessions[::-1]})
+    except Exception as exc:
+        logger.exception("Failed to list sessions")
+        return JSONResponse({"error": str(exc)}, status_code=500)
+
+
+@app.get("/chat/history")
+async def chat_history(request: Request):
+    """Get the message history for the current session."""
+    session_id = request.cookies.get("session_id")
+    if not session_id:
+        return JSONResponse({"messages": []})
+        
+    graph = _app_state.get("graph")
+    if not graph:
+        return JSONResponse({"error": "Server not ready"}, status_code=503)
+        
+    try:
+        state = await graph.aget_state({"configurable": {"thread_id": session_id}})
+        if not state or not state.values:
+            return JSONResponse({"messages": []})
+            
+        messages = state.values.get("messages", [])
+        history = []
+        for m in messages:
+            if hasattr(m, "type") and m.type in ("human", "ai"):
+                # Check for image_url if this is the last message or if we can extract it.
+                # Since image_url is stored in state, we only have it for the most recent result.
+                # For simplicity, we just return the text.
+                history.append({
+                    "role": "user" if m.type == "human" else "ai",
+                    "content": m.content
+                })
+                
+        # If there's an image in the current state, append it to the last AI message
+        image_url = state.values.get("image_url")
+        if image_url and history and history[-1]["role"] == "ai":
+            history[-1]["image_url"] = image_url
+            
+        return JSONResponse({
+            "messages": history, 
+            "denomination": state.values.get("denomination", "general")
+        })
+    except Exception as exc:
+        logger.exception("Failed to load chat history")
+        return JSONResponse({"error": str(exc)}, status_code=500)
+
+
+@app.post("/session/{session_id}")
+async def switch_session(session_id: str):
+    """Switch to a different session."""
+    resp = JSONResponse({"status": "ok", "session_id": session_id})
+    resp.set_cookie("session_id", session_id, httponly=True, max_age=86400 * 7)
+    return resp
+
+
 # ──────────────────────────────────────────────────────────────────────
 # Dev entrypoint
 # ──────────────────────────────────────────────────────────────────────
