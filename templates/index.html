@@ -196,11 +196,24 @@ function appendMessage(role, content, imageUrl) {
     if (imageUrl) {
         const imgContainer = document.createElement('div');
         imgContainer.className = 'message-image';
+        
         const img = document.createElement('img');
         img.src = imageUrl;
         img.alt = 'Generated Christian-themed image';
         img.loading = 'lazy';
+        img.onclick = () => openImageOverlay(imageUrl);
+        
+        const downloadBtn = document.createElement('button');
+        downloadBtn.className = 'download-btn';
+        downloadBtn.innerHTML = '<i class="bi bi-download"></i>';
+        downloadBtn.title = 'Download Image';
+        downloadBtn.onclick = (e) => {
+            e.stopPropagation(); // prevent zooming when clicking download
+            downloadImage(imageUrl);
+        };
+        
         imgContainer.appendChild(img);
+        imgContainer.appendChild(downloadBtn);
         body.appendChild(imgContainer);
     }
 
@@ -359,12 +372,49 @@ async function loadChatHistory() {
     }
 }
 
+// ─── Image Overlay & Download ────────────────────────────────────
+function openImageOverlay(src) {
+    const overlay = document.getElementById('imageOverlay');
+    const overlayImg = document.getElementById('overlayImage');
+    if (overlay && overlayImg) {
+        overlayImg.src = src;
+        overlay.classList.add('show');
+    }
+}
+
+function closeImageOverlay() {
+    const overlay = document.getElementById('imageOverlay');
+    if (overlay) {
+        overlay.classList.remove('show');
+        setTimeout(() => {
+            document.getElementById('overlayImage').src = '';
+        }, 300);
+    }
+}
+
+function downloadImage(url) {
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'christianity-ai-image.png';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+}
+
 // Run on load
 document.addEventListener('DOMContentLoaded', () => {
     loadSessions();
     loadChatHistory();
 });
 </script>
+<!-- ─── Image Overlay ─── -->
+<div id="imageOverlay" class="image-overlay" onclick="closeImageOverlay()">
+    <img id="overlayImage" src="" alt="Zoomed Image" onclick="event.stopPropagation()">
+    
+    <button class="download-btn" style="position: absolute; top: 1.5rem; right: 1.5rem; width: 48px; height: 48px; font-size: 1.25rem; z-index: 10001;" onclick="event.stopPropagation(); downloadImage(document.getElementById('overlayImage').src);" title="Download Image">
+        <i class="bi bi-download"></i>
+    </button>
+</div>
 
 </body>
 </html>
