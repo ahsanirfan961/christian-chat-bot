@@ -190,9 +190,11 @@ async def list_sessions():
     import aiosqlite
     
     try:
-        # Get distinct thread_ids
+        # Get thread_ids ordered by most recent checkpoint first
         async with aiosqlite.connect(db_path) as db:
-            async with db.execute("SELECT DISTINCT thread_id FROM checkpoints") as cursor:
+            async with db.execute(
+                "SELECT thread_id FROM checkpoints GROUP BY thread_id ORDER BY MAX(checkpoint_id) DESC"
+            ) as cursor:
                 threads = [row[0] for row in await cursor.fetchall()]
                 
         sessions = []
@@ -208,8 +210,8 @@ async def list_sessions():
                     title = messages[0].content[:40] + ("..." if len(messages[0].content) > 40 else "")
                     sessions.append({"id": t_id, "title": title})
                     
-        # Return in reverse chronological order (newest roughly last or just as queried, but we can't sort easily without created_at, so reverse the list as a proxy)
-        return JSONResponse({"sessions": sessions[::-1]})
+        # Return in reverse chronological order (newest first, which is the order queried above)
+        return JSONResponse({"sessions": sessions})
     except Exception as exc:
         logger.exception("Failed to list sessions")
         return JSONResponse({"error": str(exc)}, status_code=500)
