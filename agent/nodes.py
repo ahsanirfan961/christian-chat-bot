@@ -333,7 +333,7 @@ async def image_gen_node(state: AgentState) -> dict:
                     "Content-Type": "application/json",
                 },
                 json={
-                    "model": "google/gemini-2.5-flash-preview-image-generation",
+                    "model": "google/gemini-2.5-flash-image",
                     "messages": [
                         {"role": "user", "content": safe_prompt}
                     ],
@@ -348,14 +348,28 @@ async def image_gen_node(state: AgentState) -> dict:
             if choices:
                 message = choices[0].get("message", {})
                 content = message.get("content", "")
+                images = message.get("images", [])
 
-                # Check for multipart content (list of parts)
-                if isinstance(content, list):
+                # 1. Check message["images"] list (e.g. OpenRouter's gemini-2.5-flash-image)
+                if isinstance(images, list):
+                    for img in images:
+                        if isinstance(img, dict):
+                            img_url_obj = img.get("image_url")
+                            if isinstance(img_url_obj, dict):
+                                image_url = img_url_obj.get("url", "")
+                            elif isinstance(img.get("url"), str):
+                                image_url = img.get("url", "")
+                            if image_url:
+                                break
+
+                # 2. Fallback to multipart content list
+                if not image_url and isinstance(content, list):
                     for part in content:
-                        if part.get("type") == "image_url":
+                        if isinstance(part, dict) and part.get("type") == "image_url":
                             image_url = part.get("image_url", {}).get("url", "")
                             break
-                elif isinstance(content, str) and content.startswith("data:image"):
+                # 3. Fallback to base64 data URL directly in content string
+                elif not image_url and isinstance(content, str) and content.startswith("data:image"):
                     image_url = content
 
             logger.info("Image generated: %s", "✅ success" if image_url else "❌ no image in response")
