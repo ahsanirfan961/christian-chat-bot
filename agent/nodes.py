@@ -17,6 +17,7 @@ from pydantic import BaseModel, Field
 
 from agent.prompts import (
     ADVERSARIAL_REJECTION_MESSAGE,
+    OUT_OF_SCOPE_MESSAGE,
     IMAGE_SAFETY_PROMPT,
     OUTPUT_ASSEMBLER_PROMPT,
     SUPERVISOR_SYSTEM_PROMPT,
@@ -50,7 +51,7 @@ def _get_llm(temperature: float = 0.3) -> ChatOpenAI:
 class SupervisorDecision(BaseModel):
     """The Supervisor's routing decision."""
 
-    intent: Literal["qa", "image", "adversarial", "web_search"] = Field(
+    intent: Literal["qa", "image", "adversarial", "web_search", "out_of_scope"] = Field(
         description="Classified intent of the user message"
     )
     denomination: str = Field(
@@ -109,6 +110,17 @@ async def supervisor_node(state: AgentState) -> dict:
             "denomination": decision.denomination,
             "is_controversial": False,
             "messages": [AIMessage(content=ADVERSARIAL_REJECTION_MESSAGE)],
+            "retrieved_verses": [],
+            "image_url": "",
+        }
+
+    if decision.intent == "out_of_scope":
+        logger.info("🚫 Out of scope query detected — rejecting.")
+        return {
+            "next_node": "end",
+            "denomination": decision.denomination,
+            "is_controversial": False,
+            "messages": [AIMessage(content=OUT_OF_SCOPE_MESSAGE)],
             "retrieved_verses": [],
             "image_url": "",
         }

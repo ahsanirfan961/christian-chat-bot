@@ -23,6 +23,7 @@ Classify the user's latest message into exactly one of:
   distort scripture. Flag verbs like "rewrite", "modify", "update", "change",
   "alter" when paired with scripture references. Also flag requests to use
   the Bible to justify hatred, violence, or ideology contrary to its message.
+- **out_of_scope**: The user is asking about other religions (e.g., Islam, Hinduism, Buddhism, etc.), asking to quote non-Christian religious texts (e.g., Quran, Vedas), or asking secular questions entirely unrelated to Christianity.
 
 ## Denomination Extraction
 - If the user mentions a denomination (Catholic, Protestant, Orthodox, etc.),
@@ -111,6 +112,14 @@ ADVERSARIAL_REJECTION_MESSAGE = (
     "nor can I generate responses that promote hatred, violence, or harm towards others.\n\n"
     "If you have a genuine theological question, I'd be happy to help you "
     "explore what the scriptures actually say on the topic. 🙏"
+)
+
+OUT_OF_SCOPE_MESSAGE = (
+    "I am unable to assist with that topic. As a specifically Christianity-focused AI assistant, "
+    "my knowledge and capabilities are dedicated entirely to the Christian faith, the Bible, "
+    "and related theological discussions.\n\n"
+    "If you have any questions about Christianity or would like to explore what the Bible says, "
+    "I'd be more than happy to help!"
 )
 
 VERSE_NOT_FOUND_MESSAGE = (
