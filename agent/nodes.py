@@ -50,7 +50,7 @@ def _get_llm(temperature: float = 0.3) -> ChatOpenAI:
 class SupervisorDecision(BaseModel):
     """The Supervisor's routing decision."""
 
-    intent: Literal["qa", "image", "adversarial"] = Field(
+    intent: Literal["qa", "image", "adversarial", "web_search"] = Field(
         description="Classified intent of the user message"
     )
     denomination: str = Field(
@@ -121,6 +121,26 @@ async def supervisor_node(state: AgentState) -> dict:
             "is_controversial": False,
             "retrieved_verses": [],
             "image_url": "",
+        }
+
+    if decision.intent == "web_search":
+        logger.info("🌐 Routing to Web Search Agent")
+        search_params = {
+            "verse_reference": decision.verse_reference,
+            "search_keywords": decision.search_keywords,
+        }
+        return {
+            "next_node": "web_search",
+            "denomination": decision.denomination,
+            "is_controversial": decision.is_controversial,
+            "retrieved_verses": [],
+            "web_context": [],
+            "image_url": "",
+            "messages": [
+                SystemMessage(
+                    content=f"[SEARCH_PARAMS]{json.dumps(search_params)}[/SEARCH_PARAMS]"
+                )
+            ],
         }
 
     # intent == "qa"
@@ -364,7 +384,57 @@ async def image_gen_node(state: AgentState) -> dict:
 
 
 # ══════════════════════════════════════════════════════════════════════
-# NODE 4 — Output Assembler + Guardrail
+# NODE 4 — Web Search Agent
+# ══════════════════════════════════════════════════════════════════════
+
+async def web_search_node(state: AgentState) -> dict:
+    """Search the web for contemporary or historical Christian context using DuckDuckGo."""
+    logger.info("━━━ WEB SEARCH NODE ━━━")
+    
+    # Extract search params
+    search_params = {"search_keywords": None}
+    for msg in reversed(state["messages"]):
+        if hasattr(msg, "content") and "[SEARCH_PARAMS]" in msg.content:
+            try:
+                raw = msg.content.split("[SEARCH_PARAMS]")[1].split("[/SEARCH_PARAMS]")[0]
+                search_params = json.loads(raw)
+            except (IndexError, json.JSONDecodeError):
+                pass
+            break
+            
+    query = ""
+    if search_params.get("search_keywords"):
+        query = " ".join(search_params["search_keywords"])
+    else:
+        # Fallback to user message
+        for msg in reversed(state["messages"]):
+            if isinstance(msg, HumanMessage):
+                query = msg.content
+                break
+                
+    if not query:
+        query = "Christian theology"
+        
+    logger.info("Web search query: %s", query)
+    
+    web_context = []
+    try:
+        from ddgs import DDGS
+        with DDGS() as ddgs:
+            results = list(ddgs.text(query, max_results=4))
+            for r in results:
+                web_context.append(f"[{r.get('title', '')}]({r.get('href', '')}): {r.get('body', '')}")
+        logger.info("Web search returned %d results", len(web_context))
+    except Exception as exc:
+        logger.error("Web search failed: %s", exc)
+        
+    return {
+        "next_node": "output_assembler",
+        "web_context": web_context,
+    }
+
+# ══════════════════════════════════════════════════════════════════════
+# NODE 5 — Output Assembler + Guardrail
 # ══════════════════════════════════════════════════════════════════════
 
 async def output_assembler_node(state: AgentState) -> dict:
@@ -397,9 +467,14 @@ async def output_assembler_node(state: AgentState) -> dict:
     else:
         retrieved_context = "(No verses retrieved — answer from general theological knowledge only. Do NOT quote specific verses.)"
 
+    # ── Build web context string ──
+    web_ctx_list = state.get("web_context", [])
+    web_context_str = "\n\n".join(web_ctx_list) if web_ctx_list else "(No web search context retrieved.)"
+
     # ── Build the prompt ──
     system_content = OUTPUT_ASSEMBLER_PROMPT.format(
         retrieved_context=retrieved_context,
+        web_context=web_context_str,
         denomination=denomination,
         is_controversial=str(is_controversial),
     )

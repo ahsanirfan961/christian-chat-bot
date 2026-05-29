@@ -29,4 +29,5 @@ class AgentState(TypedDict):
     is_controversial: bool
     image_url: str
     retrieved_verses: List[dict]
+    web_context: List[str]
     retry_count: int

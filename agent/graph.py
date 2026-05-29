@@ -21,6 +21,7 @@ from agent.nodes import (
     output_assembler_node,
     supervisor_node,
     verse_finder_node,
+    web_search_node,
 )
 from agent.state import AgentState
 
@@ -35,6 +36,8 @@ def _supervisor_router(state: AgentState) -> str:
         return "verse_finder"
     elif next_node == "image_gen":
         return "image_gen"
+    elif next_node == "web_search":
+        return "web_search"
     else:
         return "end"
 
@@ -70,6 +73,7 @@ def build_graph(*, chromadb_collection: Any = None) -> StateGraph:
     graph.add_node("supervisor", supervisor_node)
     graph.add_node("verse_finder", bound_verse_finder)
     graph.add_node("image_gen", image_gen_node)
+    graph.add_node("web_search", web_search_node)
     graph.add_node("output_assembler", output_assembler_node)
 
     # ── Entry point ──
@@ -82,12 +86,16 @@ def build_graph(*, chromadb_collection: Any = None) -> StateGraph:
         {
             "verse_finder": "verse_finder",
             "image_gen": "image_gen",
+            "web_search": "web_search",
             "end": END,
         },
     )
 
     # ── verse_finder → output_assembler ──
     graph.add_edge("verse_finder", "output_assembler")
+
+    # ── web_search → output_assembler ──
+    graph.add_edge("web_search", "output_assembler")
 
     # ── image_gen → END (image response is self-contained) ──
     graph.add_edge("image_gen", END)
