@@ -44,10 +44,17 @@ A **Christianity-focused conversational AI** built with a **LangGraph Supervisor
 
 - **Deterministic Scripture Grounding**: Two-pass system — LLM generates search parameters, Python executes API.Bible lookup
 - **Anti-Hallucination Guardrail**: Substring-match validator ensures quoted text matches retrieved payload
-- **Adversarial Detection**: Catches attempts to rewrite/modify scripture with polite rejection
+- **Adversarial Detection**: Catches attempts to rewrite/modify scripture with polite rejection (includes rejecting violence/hate speech)
+- **Out-of-Scope Filtering**: Automatically rejects non-Christian religious or purely secular queries
 - **Fake Verse Detection**: API returns 404 → graceful "verse not found" response
+- **Interactive UI**:
+  - Automatically turns Bible verse references into clickable `bible.com` links in the exact translation mentioned.
+  - Image generation includes a click-to-zoom glassmorphism overlay and floating download buttons.
+  - Sidebar with chronologically sorted past chat sessions.
 - **Multi-Turn Memory**: SQLite-based persistent state via LangGraph checkpoints
 - **Denomination Awareness**: Remembers and applies Catholic/Protestant/Orthodox context
+- **Smart Routing**: Intent classification skips unnecessary DB verse searches for casual conversations.
+- **Web Search Integration**: DuckDuckGo sub-agent fetches real-time external context for historical facts and theologians.
 - **Christian Image Generation**: Prompt sanitisation + art style enforcement for safe image gen
 
 ## 📋 Prerequisites
